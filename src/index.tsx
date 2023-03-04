@@ -3,11 +3,17 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { MetaMaskProvider } from "metamask-react";
+import "./tailwind.generated.css";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById('root') as any);
 root.render(
   <React.StrictMode>
-    <App />
+    <MetaMaskProvider>
+    <div className="dark bg-monaco" >
+      <App />
+    </div>
+    </MetaMaskProvider>
   </React.StrictMode>
 );
 
