@@ -1,43 +1,24 @@
 import React from 'react';
 import MonacoEditor from 'react-monaco-editor';
 
+import { solidityCompiler } from "@agnostico/browser-solidity-compiler";
 
-const defaultCode = `// SPDX-License-Identifier: GPL-3.0
+const simple = `// SPDX-License-Identifier: GPL-3.0
 
 pragma solidity >=0.8.2 <0.9.0;
 
-/**
- * @title Storage
- * @dev Store & retrieve value in a variable
- * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
- */
-contract Storage {
-
-    uint256 number;
-
-    /**
-     * @dev Store value in variable
-     * @param num value to store
-     */
-    function store(uint256 num) public {
-        number = num;
-    }
-
-    /**
-     * @dev Return value 
-     * @return value of 'number'
-     */
-    function retrieve() public view returns (uint256){
-        return number;
-    }
-}
-`
+contract C { 
+  fallback() external { 
+    emit Hello("hello");
+  } 
+  event Hello(string);
+}`
 
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      code: defaultCode,
+      code: simple,
       address: ''
     }
   }
@@ -48,15 +29,32 @@ class App extends React.Component {
   }
   onChange(newValue, e) {
     console.log('onChange', newValue, e);
+    this.setState({ code: newValue })
+  }
+  compile() {
+
+    console.log('code', this.state.code)
+    
+    let version = 'soljson-v0.8.16+commit.07a7930e.js'
+    let options = {}
+    solidityCompiler({
+      version: `https://binaries.soliditylang.org/bin/${version}`,
+      contractBody: this.state.code,
+      options,
+    }).then((output => {
+      console.log("compile output: ", output)
+    }, error => {
+      console.log("compile error ", error)
+    }))
+
   }
   render() {
     const code = this.state.code;
     const options = {
       selectOnLineNumbers: true
-    };
+    }; 
     return (
       <>
-      
         <MonacoEditor
           width="100%"
           height="90vh"
@@ -64,11 +62,17 @@ class App extends React.Component {
           theme="vs-dark"
           value={code}
           options={options}
-          onChange={this.onChange}
-          editorDidMount={this.editorDidMount}
+          onChange={this.onChange.bind(this)}
+          editorDidMount={this.editorDidMount.bind(this)}
         />
-        <div style={{display: "flex", justifyContent:"center"}}>
-          <button>yoo</button>
+        <div style={{display: "flex", justifyContent:"space-around"}}>
+          <button
+            onClick={this.compile.bind(this)}
+            type="button"
+            className="rounded-md bg-indigo-500 py-1.5 px-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          >
+            compile
+          </button>
         </div>
       </>
     );
