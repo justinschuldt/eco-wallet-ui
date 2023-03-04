@@ -37,7 +37,8 @@ function solidityCompiler() {
             // compile, if the method is there
             if (compile) {
                 const output = JSON.parse(compile(data.input))
-                postMessage(output)
+                // console.log("going to return compile: ", data.id)
+                postMessage({ output, id: data.id})
             }
        }
     });

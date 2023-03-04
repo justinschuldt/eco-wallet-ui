@@ -6,6 +6,10 @@ import reportWebVitals from './reportWebVitals';
 import { MetaMaskProvider } from "metamask-react";
 import "./tailwind.generated.css";
 
+import TimeAgo from 'javascript-time-ago'
+import en from 'javascript-time-ago/locale/en.json'
+TimeAgo.addDefaultLocale(en)
+
 const root = ReactDOM.createRoot(document.getElementById('root') as any);
 root.render(
   <React.StrictMode>

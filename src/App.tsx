@@ -1,186 +1,124 @@
 import React, {useState} from 'react';
-import MonacoEditor from 'react-monaco-editor';
 import Web3 from "web3"
 import { useMetaMask } from "metamask-react";
-
-import solidityCompiler from "./workers/solc-complier.worker"
-
-const worker = new Worker(URL.createObjectURL(new Blob([`(${solidityCompiler})()`], { type: 'module' }) ));
-
-const simple = `// SPDX-License-Identifier: GPL-3.0
-
-pragma solidity >=0.8.2 <0.9.0;
-
-contract C { 
-  fallback() external { 
-    emit Hello("hello");
-  } 
-  event Hello(string);
-}`
+import Inputs from "Inputs"
+import { AbiItem } from 'web3-utils';
 
 function App({}: {}) {
   const { status, connect, account, chainId, ethereum } = useMetaMask();
 
-  const [code, setCode] = useState(simple)
   const [address, setAddress] = useState("")
   const [compileResult, setCompileResult] = useState("")
-  const [unsafeCompileResult, setUnsafeCompileResult] = useState("")
+  const [compileAbi, setCompileAbi] = useState<any[]>([])
+  const [compileVersion, setCompileVersion] = useState("")
 
-  const editorDidMount = (editor: any, monaco: any) => {
-    editor.focus();
-  }
-
-  const onChange = (newValue: any, e: any) => {
-    setCode(newValue)
-  }
-  worker.onerror = ev => {
-    console.error('worker error: ', ev)
-  }
-  worker.onmessage = ev => {
-    const output = ev.data
-    const byteCode = output.contracts.Compiled_Contracts.C.evm.deployedBytecode.object
-    if (byteCode) {
-      console.log("got byteCode from worker: ", byteCode)
-      setCompileResult(byteCode)
-    } else {
-      console.log("did not get byteCode from worker")
-    }
-
-  }
-  const compile = () => {
-    console.log('code', code)
-
-    const version = 'soljson-v0.8.16+commit.07a7930e.js'
-
-    const input = JSON.stringify({
-      language: 'Solidity',
-      sources: {
-          'Compiled_Contracts': {
-          content: code
-        }
-      },
-      settings: {
-        outputSelection: {
-          '*': {
-            '*': ['*'],
-          },
-        },
-      },
-    })
-    worker.postMessage({
-        version: `https://binaries.soliditylang.org/bin/${version}`,
-        input
-    })
-
-  }
-  const mmStatus = () => {
-    console.log("status: ", status)
-    if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>
-
-    if (status === "unavailable") return <div>MetaMask not available :(</div>
-
-    if (status === "notConnected") return <button onClick={connect}>Connect to MetaMask</button>
-
-    if (status === "connecting") return <div>Connecting...</div>
-
-    if (status === "connected") return <div>Connected account {account} on chain ID {chainId}</div>
-  }
-  const connectWallet = () => {
-
+  const connectWallet = async () => {
+    await connect()
     const eth = ethereum
-    if(eth){
-      // Do something 
-      console.log("has metamask")
-    } else {
-      // no metamask
+    if (!eth) {
       console.log("does not seem to have metamask, returning ")
       return
     }
-    console.log("going to request accounts")
-    eth.request({method:'eth_requestAccounts'})
-      .then((res: any)=>{
-              // Return the address of the wallet
-              console.log(res)
-              let acct = res.length >=1 ? res[0] : undefined
-              if (acct) {
-                setAddress(acct)
-              }
-      }, (err: any) => {
-          console.log(console.error( "failed getting accounts. err ", err))
-        })
+    try{
+        const res = await eth.request({method:'eth_requestAccounts'})
+        // console.log("metamask res: ", res)
+        let acct = res.length >=1 ? res[0] : undefined
+        if (acct) {
+          setAddress(acct)
+          return acct
+        }
+      } catch (err: any) { 
+        console.log(console.error( "failed getting accounts. err ", err))
+        throw err
+      }
   }
-  const sendTx = () => {
+
+  const sendTx = async () => {
+
     async function send(bytes: string, fromAddr: string) {
       const eth = ethereum
       const web3 = new Web3(ethereum);
       await eth.enable();
-      const address = "0x82b035B4405Dd60b449b054894004FeE80566655"
-      const abi = JSON.parse(`[{"inputs":[],"name":"RuntimeDeployError","type":"error"},{"inputs":[],"name":"RuntimeDestroyError","type":"error"},{"inputs":[{"internalType":"bytes","name":"runtimeCode","type":"bytes"}],"name":"_deployRuntime","outputs":[{"internalType":"address","name":"runtime","type":"address"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes","name":"runtimeCode","type":"bytes"},{"internalType":"bytes","name":"callData","type":"bytes"},{"internalType":"uint256","name":"walletSalt","type":"uint256"}],"name":"exec","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"getExecuteInfo","outputs":[{"internalType":"address","name":"runtime","type":"address"},{"internalType":"bytes","name":"callData","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"runtimeCode","type":"bytes"}],"name":"getRuntimeByRuntimeCode","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"uint256","name":"walletSalt","type":"uint256"}],"name":"getWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"runtime","type":"address"},{"internalType":"bytes","name":"callData","type":"bytes"},{"internalType":"uint256","name":"walletSalt","type":"uint256"}],"name":"reexec","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint248","name":"","type":"uint248"}],"name":"wasNonceUsed","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]`)
-      const NameContract = new web3.eth.Contract(abi, address);
 
-      let runtimeCode =  "0x" + bytes
-      console.log("runtimeCode: ", runtimeCode)
+      
+      const address = "0x82b035B4405Dd60b449b054894004FeE80566655"
+      const abiString = `[{"inputs":[],"name":"RuntimeDeployError","type":"error"},{"inputs":[],"name":"RuntimeDestroyError","type":"error"},{"inputs":[{"internalType":"bytes","name":"runtimeCode","type":"bytes"}],"name":"_deployRuntime","outputs":[{"internalType":"address","name":"runtime","type":"address"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes","name":"runtimeCode","type":"bytes"},{"internalType":"bytes","name":"callData","type":"bytes"},{"internalType":"uint256","name":"walletSalt","type":"uint256"}],"name":"exec","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"getExecuteInfo","outputs":[{"internalType":"address","name":"runtime","type":"address"},{"internalType":"bytes","name":"callData","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"runtimeCode","type":"bytes"}],"name":"getRuntimeByRuntimeCode","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"uint256","name":"walletSalt","type":"uint256"}],"name":"getWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"runtime","type":"address"},{"internalType":"bytes","name":"callData","type":"bytes"},{"internalType":"uint256","name":"walletSalt","type":"uint256"}],"name":"reexec","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint248","name":"","type":"uint248"}],"name":"wasNonceUsed","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]`
+      // console.log("bytes ", bytes)
+      // console.log("senc abi ", abiString)
+      // console.log("from addr: ", fromAddr)
+      const abi = JSON.parse(abiString) as AbiItem[]
+      const contract = new web3.eth.Contract(abi, address);
+      // console.log("contract: ", contract)
+
+      let hexRuntime =  "0x" + bytes
       let callData = "0x"
       let walletSalt = 0
-      NameContract.methods.exec(runtimeCode, callData, walletSalt).send({from: fromAddr});
+      contract.methods.exec(hexRuntime, callData, walletSalt).send({from: fromAddr});
     }
-    console.log("compileResult: ", compileResult)
-    console.log("this.state.address ", address)
-    if (compileResult && address) {
-      console.log("have bytecode and from address, going to send")
-      send(compileResult, address)
+
+    if (compileResult) {
+        // console.log("going to connect wallet")
+        let addr = await connectWallet()
+        if (addr) {
+          await send(compileResult, addr)
+        }
     }
   }
+  const handleCompiledRuntime = (res: string) => {
+    // console.log("app handleCompiledRuntime", res)
+    setCompileResult(res)
+  }
+  const handleCompiledAbi = (res: any[]) => {
+    // console.log("app.tsx handleCompiledAbi", res)
+    setCompileAbi(res)
+  }
+  const handleCompiledVersion = (res: string) => {
+    // console.log("app.tsx handleCompiledVersion", res)
+    setCompileVersion(res)
+  }
 
+  const mmStatus = () => {
+    if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>
+    if (status === "unavailable") return <div>MetaMask not available :(</div>
+    if (status === "notConnected") return <button onClick={connect}>Connect to MetaMask</button>
+    if (status === "connecting") return <div>Connecting...</div>
+    if (status === "connected") {
+      return <div className="shrink">
+        <div>{chainId}</div>
+        <div>{account}</div>
+      </div>
+    }
+  }
 
     const options = {
       selectOnLineNumbers: true
     }; 
     let buttonStyle = "rounded-md bg-white/10 py-2 px-3 text-sm font-semibold text-white shadow-sm hover:bg-white/20"
     return (
-      <>
-          <MonacoEditor
-            width="100%"
-            height="40vh"
-            language="sol"
-            theme="vs-dark"
-            value={code}
-            options={options}
-            onChange={onChange}
-            editorDidMount={editorDidMount}
-          />
-          <div>
+      <div className="h-screen flex flex-col align-between text-white pb-12">
 
-     
-            <div style={{display: "flex", justifyContent:"space-around"}} className="text-white pb-2">
+            <Inputs
+              compiledRuntime={handleCompiledRuntime}
+              compiledAbi={handleCompiledAbi} 
+              compiledVersion={handleCompiledVersion}
+            />
+
+          <div className="flex flex-row justify-between w-full px-12">
+
+              <div className="shrink">
                 {mmStatus()}
-            </div>
-
-            <div style={{display: "flex", justifyContent:"space-around"}}>
-              <button
-                onClick={compile}
-                type="button"
-                className={buttonStyle}
-              >
-                compile
-              </button>
-              <button
-                onClick={connectWallet}
-                type="button"
-                className={buttonStyle}
-              >
-                connect
-              </button>
-              <button
-                onClick={sendTx}
-                type="button"
-                className={buttonStyle}
-             >
-                send
-              </button>
+              </div>
+        
+                <button
+                  onClick={sendTx}
+                  type="button"
+                  className={"rounded-md bg-white/10 py-2 px-3 text-sm font-semibold text-white shadow-sm hover:bg-white/20"}
+                >
+                  verify
+                </button>
+            
             </div>
           </div>
-      </>
     );
 }
 
