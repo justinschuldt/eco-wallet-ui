@@ -56,6 +56,7 @@ export interface CompilerInputOpts {
 const DEFAULT_OUTPUT_SELECTION = ['evm.deployedBytecode.object', 'abi'];
 
 export function createCompilerInput(opts: CompilerInputOpts): CompilerInput {
+    // console.log("fragment: ", opts.fragment)
     const name = getWalletOperationContractName(opts.fragment);
     const version = opts.version.split("v")[1].split("+")[0]
     // console.log("solidity version for contract: ", version)
@@ -90,6 +91,7 @@ contract ${name} {
                     [name]: DEFAULT_OUTPUT_SELECTION
                 },
             },
+           
         },
     };
 }
