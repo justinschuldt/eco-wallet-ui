@@ -27,7 +27,7 @@ const solcVersions = [
 // etc
 
 `
-  const outerDefDefault = `import "lib.sol";`
+  const outerDefDefault = ``
   const innerDefDefault = `event Hello(string);`
   
 
@@ -241,12 +241,12 @@ export default function Inputs(props: InputsProps) {
     
     
 
-    {/* <div  className="flex flex-row pb-2 justify-end text-sm w-full">
-            {loading ? <div className="text-xs">compiling</div> : null}
+    <div  className="flex flex-row pb-2 justify-end text-sm w-full">
+            {/* {loading ? <div className="text-xs">compiling</div> : null} */}
             {compileWarnings && compileWarnings.length >= 1 ? <div className="text-xs">warnings:</div> : null}
             {compileWarnings.map(i => <div className="text-xs">{i}</div>)}
             {!loading && compileResult && compileWarnings.length === 0 && compileMillisec ? <div className="text-xs">compiled</div>: null}
-    </div> */}
+    </div>
 
     </div>   
     </>
