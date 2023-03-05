@@ -1,13 +1,19 @@
-import React, {useState} from 'react';
+import React, {Fragment, useState} from 'react';
 import Web3 from "web3"
 import { useMetaMask } from "metamask-react";
 import Inputs from "Inputs"
+import { Listbox, Transition } from '@headlessui/react'
+import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { AbiItem } from 'web3-utils';
 
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ')
+}
 function App({}: {}) {
   const { status, connect, account, chainId, ethereum } = useMetaMask();
 
-  const [address, setAddress] = useState("")
+  const [activeAccount, setAccount] = useState("")
+  const [accounts, setAccounts] = useState<string[]>([])
   const [compileResult, setCompileResult] = useState("")
   const [compileAbi, setCompileAbi] = useState<any[]>([])
   const [compileVersion, setCompileVersion] = useState("")
@@ -24,7 +30,8 @@ function App({}: {}) {
         // console.log("metamask res: ", res)
         let acct = res.length >=1 ? res[0] : undefined
         if (acct) {
-          setAddress(acct)
+          setAccounts(res)
+          setAccount(acct)
           return acct
         }
       } catch (err: any) { 
@@ -48,7 +55,8 @@ function App({}: {}) {
       // console.log("from addr: ", fromAddr)
       const abi = JSON.parse(abiString) as AbiItem[]
       const contract = new web3.eth.Contract(abi, address);
-      // console.log("contract: ", contract)
+      console.log("contract: ", contract)
+      
 
       let hexRuntime =  "0x" + bytes
       let callData = "0x"
@@ -75,6 +83,10 @@ function App({}: {}) {
   const handleCompiledVersion = (res: string) => {
     // console.log("app.tsx handleCompiledVersion", res)
     setCompileVersion(res)
+    connectWallet()
+  }
+  const setActiveAccount = (res: string[]) => {
+    setAccount(res[0])
   }
 
   const mmStatus = () => {
@@ -93,7 +105,6 @@ function App({}: {}) {
     const options = {
       selectOnLineNumbers: true
     }; 
-    let buttonStyle = "rounded-md bg-white/10 py-2 px-3 text-sm font-semibold text-white shadow-sm hover:bg-white/20"
     return (
       <div className="h-screen flex flex-col align-between text-white pb-12">
 
@@ -106,15 +117,71 @@ function App({}: {}) {
           <div className="flex flex-row justify-between w-full px-12">
 
               <div className="shrink">
-                {mmStatus()}
+                {/* {mmStatus()} */}
+                <Listbox value={accounts} onChange={setActiveAccount}>
+                  {({ open }) => (
+                    <>
+                      <div className="relative mt-2">
+                        <Listbox.Button className="relative backdrop-opacity-50 w-full cursor-default rounded-md bg-monaco py-1.5 pl-3 pr-10 text-left text-gray-50 shadow-sm  ring-inset ring-gray-300 opacity sm:text-sm sm:leading-6">
+                          <span className="block truncate text-lg">{account}</span>
+                          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                            <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                          </span>
+                        </Listbox.Button>
+
+                        <Transition
+                          show={open}
+                          as={Fragment}
+                          leave="transition ease-in duration-100"
+                          leaveFrom="opacity-100"
+                          leaveTo="opacity-0"
+                        >
+                          <Listbox.Options className="absolute backdrop-opacity-50 z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-monaco py-1 text-lg shadow-lg ring-1 ring-gray-400 ring-opacity-5 focus:outline xs:text-sm">
+                            {accounts.map((item, index) => (
+                              <Listbox.Option
+                                key={index}
+                                className={({ active }) =>
+                                  classNames(
+                                    active ? 'bg-monaco-600 text-white' : 'text-gray-50',
+                                    'relative cursor-default select-none py-2 pl-3 pr-9 text-lg'
+                                  )
+                                }
+                                value={item}
+                              >
+                                {({ selected, active }) => (
+                                  <>
+                                    <span className={classNames(selected ? 'font-semibold' : 'font-normal', 'text-lg block truncate')}>
+                                      {item}
+                                    </span>
+
+                                    {selected ? (
+                                      <span
+                                        className={classNames(
+                                          active ? 'bg-monaco text-white' : 'text-gray-50',
+                                          'absolute inset-y-0 right-0 flex items-center pr-4'
+                                        )}
+                                      >
+                                        <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                      </span>
+                                    ) : null}
+                                  </>
+                                )}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
+                        </Transition>
+                      </div>
+                    </>
+                  )}
+                </Listbox>
               </div>
         
                 <button
                   onClick={sendTx}
                   type="button"
-                  className={"rounded-md bg-white/10 py-2 px-3 text-sm font-semibold text-white shadow-sm hover:bg-white/20"}
+                  className={"rounded-md bg-white/10 py-2 px-3 text-xl font-semibold tracking-wider text-white focus:bg-indigo-500 shadow-sm hover:bg-indigo-500 hoverr:bg-white/20 w-72"}
                 >
-                  verify
+                  Verify
                 </button>
             
             </div>

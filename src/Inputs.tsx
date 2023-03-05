@@ -16,9 +16,19 @@ const solcVersions = [
     "soljson-v0.8.16+commit.07a7930e",
     "soljson-v0.7.2+commit.51b20bc0"
   ]
-  const simple = `emit Hello("hellooo");`
-  const outerDefDefault = ""
-  const innerDefDefault = "event Hello(string);"
+  const simple = `emit Hello("hellooo");
+
+// do more stuff here
+
+// transfer
+
+// mint
+
+// etc
+
+`
+  const outerDefDefault = `import "lib.sol";`
+  const innerDefDefault = `event Hello(string);`
   
 
 function classNames(...classes: string[]) {
@@ -126,18 +136,55 @@ export default function Inputs(props: InputsProps) {
   }
 
   const options = {
-    selectOnLineNumbers: true
+    selectOnLineNumbers: true,
+    minimap: {
+		enabled: false
+	}
   }; 
   return (
     <>
-    <div className="text-white pb-6 px-4 grow">
-        <div className='mx-80%'>
+    <div className="flex flex-col justify-between text-white pb-0 mx-4 mt-6 grow">   
+
+    <MonacoEditor
+            width="100%"
+            className=""
+            height="300"
+            language="sol"
+            theme="vs-dark"
+            value={runtimeCode}
+            options={options}
+            onChange={editorChanged}
+            editorDidMount={editorDidMount}
+          />
+       
+
+
+
+    <div  className="flex flex-row pb-0 justify-between text-sm w-full"> 
+
+        <div  className="flex flex-row pb-2 justify-between text-sm w-full ml-8 ">
+            <div className="relative mt-2 rounded-md shadow-sm pl-2">
+                <input
+                type="text"
+                name="price"
+                id="price"
+                className="block w-24 h-8 bg-monaco rounded-md border-0 py-1.5 pl-7 pr-12 text-gray-100 ring-1 ring-inset ring-gray-500 placeholder:text-gray-400  sm:text-sm sm:leading-6"
+                placeholder="0.1"
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <span className="text-gray-300 sm:text-sm" id="price-currency">
+                    ETH
+                </span>
+                </div>
+            </div>
+        </div>
+
     <Listbox value={solcVersion} onChange={versionChanged}>
       {({ open }) => (
         <>
-          <Listbox.Label className="block text-sm font-medium leading-6 text-gray-900">Assigned to</Listbox.Label>
-          <div className="relative mt-2">
-            <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+        {/* <Listbox.Label className="text-sm font-medium  text-gray-300">Signer</Listbox.Label> */}
+          <div className="relative mt-2 mr-6">
+            <Listbox.Button className="relative backdrop-opacity-50 w-full cursor-default rounded-md bg-monaco py-1.5 pl-3 pr-10 text-left text-gray-50 shadow-sm  ring-inset ring-gray-300 opacity sm:text-sm sm:leading-6">
               <span className="block truncate">{solcVersion}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -151,13 +198,13 @@ export default function Inputs(props: InputsProps) {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+              <Listbox.Options className="absolute backdrop-opacity-50 z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-monaco py-1 text-base shadow-lg ring-1 ring-gray-400 ring-opacity-5 focus:outline sm:text-sm">
                 {solcOptions.map((item, index) => (
                   <Listbox.Option
                     key={index}
                     className={({ active }) =>
                       classNames(
-                        active ? 'bg-indigo-600 text-white' : 'text-gray-900',
+                        active ? 'bg-monaco-600 text-white' : 'text-gray-50',
                         'relative cursor-default select-none py-2 pl-3 pr-9'
                       )
                     }
@@ -172,7 +219,7 @@ export default function Inputs(props: InputsProps) {
                         {selected ? (
                           <span
                             className={classNames(
-                              active ? 'text-white' : 'text-indigo-600',
+                              active ? 'bg-monaco text-white' : 'text-gray-50',
                               'absolute inset-y-0 right-0 flex items-center pr-4'
                             )}
                           >
@@ -190,51 +237,18 @@ export default function Inputs(props: InputsProps) {
       )}
     </Listbox>
 
-        <label htmlFor="outerDefs" className="block text-sm font-medium leading-6 text-gray-900">
-            Outer definitions
-        </label>
-        <textarea
-            rows={1}
-            onChange={outerDefChanged}
-            name="outerDefs"
-            id="outerDefs"
-            defaultValue={outerDefs}
-            className="block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:py-1.5 sm:text-sm sm:leading-6"        placeholder="// outer definitions"
-        />
+    </div>
+    
+    
 
-        <label htmlFor="innerDefs" className="block text-sm font-medium leading-6 text-gray-900">
-            Inner definitions
-        </label>
-        <textarea
-            rows={2}
-            onChange={innerDefChanged}
-            name="innerDefs"
-            id="innerDefs"
-            defaultValue={innerDefs}
-            className="block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:py-1.5 sm:text-sm sm:leading-6"            placeholder="// inner definitions"
-        />
-        </div>
-    </div>                             
-
-    <MonacoEditor
-            width="100%"
-            className="h-full grow"
-            language="sol"
-            theme="vs-dark"
-            value={runtimeCode}
-            options={options}
-            onChange={editorChanged}
-            editorDidMount={editorDidMount}
-          />
-
-    <div  className="flex flex-row pb-2 justify-end text-sm min-h-8 h-8 mr-12">
+    {/* <div  className="flex flex-row pb-2 justify-end text-sm w-full">
             {loading ? <div className="text-xs">compiling</div> : null}
             {compileWarnings && compileWarnings.length >= 1 ? <div className="text-xs">warnings:</div> : null}
             {compileWarnings.map(i => <div className="text-xs">{i}</div>)}
             {!loading && compileResult && compileWarnings.length === 0 && compileMillisec ? <div className="text-xs">compiled</div>: null}
-            {/* <ReactTimeAgo date={compileMillisec} locale="en-US" timeStyle="twitter"/> */}
-    </div>
+    </div> */}
 
+    </div>   
     </>
   )
 }
